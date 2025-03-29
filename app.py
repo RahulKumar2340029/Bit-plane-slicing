@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+import io  # Make sure to import io module
 
 # Function to perform Bit Plane Slicing
 def bit_plane_slicing(image):
@@ -17,7 +18,7 @@ def bit_plane_slicing(image):
 def reconstruct_image(bit_planes, selected_planes):
     reconstructed = np.zeros_like(bit_planes[0], dtype=np.uint8)
     for i in selected_planes:
-        reconstructed += bit_planes[i] * (2 ** i)
+        reconstructed += (bit_planes[i] / 255).astype(np.uint8) * (2 ** i)
     return reconstructed
 
 # Main Streamlit app
@@ -121,16 +122,24 @@ def main():
         # Download option
         st.sidebar.subheader("Export")
         if st.sidebar.button("Download Reconstructed Image"):
-            pil_img = Image.fromarray(reconstructed)
-            buf = BytesIO()
-            pil_img.save(buf, format="PNG")
-            byte_im = buf.getvalue()
-            st.sidebar.download_button(
-                label="Download",
-                data=byte_im,
-                file_name="reconstructed_image.png",
-                mime="image/png"
-            )
+            if 'reconstructed' in locals():  # Check if reconstructed variable exists
+                # Create a PIL Image from numpy array
+                pil_img = Image.fromarray(reconstructed)
+                # Create BytesIO object for saving the image
+                buffer = io.BytesIO()
+                # Save the image to the buffer
+                pil_img.save(buffer, format="PNG")
+                # Get the BytesIO buffer value
+                img_bytes = buffer.getvalue()
+                # Create download button
+                st.sidebar.download_button(
+                    label="Download PNG",
+                    data=img_bytes,
+                    file_name="reconstructed_image.png",
+                    mime="image/png"
+                )
+            else:
+                st.sidebar.error("Please select bit planes to reconstruct first")
 
 if __name__ == "__main__":
     main()
